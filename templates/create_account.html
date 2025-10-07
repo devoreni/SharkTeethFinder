@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account</title>
+</head>
+<body>
+    <h1>Create Account</h1>
+
+    <form method="POST" action="">
+        {{ form.hidden_tag() }}
+        {{ form.new_username }}<br>
+        {{ form.new_password }}<br>
+        {{ form.new_password2 }}<br>
+        <br>
+        {{ form.admin_username }}<br>
+        {{ form.admin_password }}<br>
+        {{ form.admin_password2}}<br>
+        <br>
+        {{ form.submit }}
+    </form>
+
+    <a href="{{ url_for('index') }}">Back to Login</a><br>
+</body>
+</html>
