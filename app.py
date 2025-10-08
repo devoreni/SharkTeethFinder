@@ -13,6 +13,7 @@ from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError, InvalidHash
 from time import sleep
 import re
+import vision
 
 secrets = dotenv_values('.env')
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -72,10 +73,10 @@ class RegisterForm(FlaskForm):
     def validate_new_username(self, username):
         existing_user_username = User.query.filter_by(
             username=username.data).first()
-        
+
         if existing_user_username:
             raise ValidationError("That username already exists, please choose another one.")
-        
+
 class LoginForm(FlaskForm):
     username = StringField(validators=[InputRequired(), Length(min=4, max=20)],
                                render_kw={'placeholder': 'username'}
@@ -85,7 +86,7 @@ class LoginForm(FlaskForm):
     )
 
     submit = SubmitField('Log In')
-        
+
 def hash_credentials(p1, p2=''):
     combined = f'{p1}||{p2}||{secrets['PEPPER']}'
     return ph.hash(combined)
