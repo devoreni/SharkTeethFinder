@@ -6,7 +6,7 @@ import io
 import os
 import click
 import cv2
-from dotenv import dotenv_values
+from dotenv import load_dotenv
 
 from extensions import db, login_manager, ph
 import model
@@ -16,11 +16,11 @@ import vision
 def create_app():
     """Application factory pattern"""
     app = Flask(__name__)
-    secrets = dotenv_values('.env')
+    load_dotenv()
     basedir = os.path.abspath(os.path.dirname(__file__))
 
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "sen.db")}'
-    app.config['SECRET_KEY'] = secrets['SESSION_COOKIE_SECRET_KEY']
+    app.config['SECRET_KEY'] = os.environ.get('SESSION_COOKIE_SECRET_KEY')
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'index'

@@ -1,6 +1,6 @@
 import boto3
 import os
-from dotenv import dotenv_values
+from dotenv import load_dotenv
 import cv2
 from PIL import Image
 from pillow_heif import register_heif_opener
@@ -10,12 +10,12 @@ import io
 register_heif_opener()
 
 def get_image(image_bytes: bytes, original_filename: str):
-    secrets = dotenv_values('.env')
+    load_dotenv()
 
     # Create AWS Rekognition Client
     rekognition_client = boto3.client('rekognition',
-                                      aws_access_key_id=secrets['AWS_ACCESS_KEY_ID'],
-                                      aws_secret_access_key=secrets['AWS_SECRET_ACCESS_KEY'],
+                                      aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
+                                      aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'),
                                       region_name='us-east-1')
 
     # Set the target class

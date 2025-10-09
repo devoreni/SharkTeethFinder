@@ -4,12 +4,13 @@ from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import InputRequired, Length, ValidationError
 from argon2.exceptions import VerifyMismatchError, InvalidHash
 from time import sleep
-from dotenv import dotenv_values
+from dotenv import load_dotenv
+import os
 
 # Import the db and ph instances from extensions.py
 from extensions import db, ph
 
-secrets = dotenv_values('.env')
+load_dotenv()
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -48,11 +49,11 @@ class LoginForm(FlaskForm):
     submit = SubmitField('Log In')
 
 def hash_credentials(p1, p2=''):
-    combined = f'{p1}||{p2}||{secrets["PEPPER"]}'
+    combined = f'{p1}||{p2}||{os.environ.get("PEPPER")}'
     return ph.hash(combined)
 
 def verify_credentials(hashed, p1, p2=''):
-    combined = f'{p1}||{p2}||{secrets["PEPPER"]}'
+    combined = f'{p1}||{p2}||{os.environ.get("PEPPER")}'
     try:
         return ph.verify(hashed, combined)
     except (VerifyMismatchError, InvalidHash):
