@@ -7,23 +7,73 @@ import os
 import click
 import cv2
 from dotenv import load_dotenv
+import json
 
 from extensions import db, login_manager, ph
 import model
 import vision
 
+def setup_database(app):
+    with app.app_context():
+        db.create_all()
+        print('Database tables created/checked')
+
+    admins_json = os.environ.get("INITIAL_ADMINS")
+    if not admins_json:
+        print("No Initial Admins found")
+        return
+
+    try:
+        admins_to_create = json.loads(admins_json)
+    except json.JSONDecodeError:
+        print("Error in decoding admins")
+        return
+    except Exception as e:
+        print(f"An unexpected error occurred {e}")
+        return
+
+    for admin_data in admins_to_create:
+        username = admin_data.get('username')
+        pass_1 = admin_data.get('password')
+        pass_2 = admin_data.get('password_2')
+
+        if not username or not pass_1 or not pass_2:
+            print('Issue creating admin, username, password, or second password missing')
+            continue
+
+        admin_exists = db.session.scalar(
+            select(model.Admin).where(model.Admin.username == username)
+        )
+
+        if admin_exists:
+            print(f'admin {username} already exists, skipping')
+            continue
+
+        hashed_password = model.hash_credentials(pass_1, pass_2)
+        new_admin = model.Admin(username=username, password=hashed_password)
+        db.session.add(new_admin)
+
+    db.session.commit()
 
 def create_app():
     """Application factory pattern"""
     app = Flask(__name__)
     load_dotenv()
-    basedir = os.path.abspath(os.path.dirname(__file__))
 
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "sen.db")}'
+    db_url = os.environ.get('DATABASE_URL')
+    if db_url:
+        if db_url.startswith("postgres://"):
+            db_url = db_url.replace("postgres://", "postgresql://", 1)
+        app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+    else:
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "sen.db")}'
     app.config['SECRET_KEY'] = os.environ.get('SESSION_COOKIE_SECRET_KEY')
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'index'
+
+    setup_database(app)
 
     @login_manager.user_loader
     def load_user(user_id):
