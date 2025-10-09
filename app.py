@@ -1,12 +1,16 @@
-from flask import Flask, render_template, url_for, redirect
+from flask import Flask, render_template, url_for, redirect, request, flash
 from flask_login import login_user, login_required, logout_user
-import click
-from dotenv import dotenv_values
-import os
 from sqlalchemy import select
+import base64
+import io
+import os
+import click
+import cv2
+from dotenv import dotenv_values
 
 from extensions import db, login_manager, ph
 import model
+import vision
 
 
 def create_app():
@@ -17,8 +21,6 @@ def create_app():
 
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "sen.db")}'
     app.config['SECRET_KEY'] = secrets['SESSION_COOKIE_SECRET_KEY']
-
-    # Initialize extensions with the app
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'index'
@@ -42,6 +44,32 @@ def create_app():
     @app.route('/SharkToothFinder', methods=['GET', 'POST'])
     @login_required
     def home():
+        if request.method == 'POST':
+            if 'image-file' not in request.files:
+                flash('No file part')
+                return redirect(request.url)
+
+            file = request.files['image-file']
+
+            if file.filename == '':
+                flash('No selected file')
+                return redirect(request.url)
+
+            if file:
+                image_bytes = file.read()
+
+                processed_image_np, obj_count = vision.get_image(image_bytes, file.filename)
+
+                if processed_image_np is None:
+                    flash('Could not process image file')
+                    return redirect(request.url)
+
+                _, buffer = cv2.imencode('.png', processed_image_np)
+                img_base64 = base64.b64encode(buffer).decode('utf-8')
+
+                return render_template('home.html', processed_image=img_base64, object_count=obj_count)
+
+        # Get request
         return render_template('home.html')
 
     @app.route('/logout', methods=['GET', 'POST'])
@@ -57,7 +85,7 @@ def create_app():
             if form.new_password.data != form.new_password2.data:
                 return render_template('create_account.html', form=form, error='New user passwords do not match')
             statement = select(model.Admin).where(model.Admin.username == form.admin_username.data)
-            admin = db.session.get(statement)
+            admin = db.session.scalar(statement)
             if not admin or not model.verify_credentials(admin.password, form.admin_password.data,
                                                          form.admin_password2.data):
                 return render_template('create_account.html', form=form, error='Admin information not correct')

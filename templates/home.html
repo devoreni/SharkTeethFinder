@@ -4,10 +4,123 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shark Tooth Finder</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; margin-top: 50px; }
+        #image-container {
+            width: 80%;
+            max-width: 600px;
+            min-height: 400px;
+            border: 2px dashed #ccc;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        #image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+        }
+        #image-upload-label {
+            cursor: pointer;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+        }
+        .button-group { margin-top: 10px; }
+        .button-group button, .button-group label {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 0 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .button-group button:disabled {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+            color: #6c757d;
+        }
+        #result-message { font-size: 1.2em; font-weight: bold; margin-top: 20px; }
+        .text-success { color: green; }
+        .text-danger { color: red; }
+    </style>
 </head>
 <body>
-    
+
     <h1>Find Shark Teeth</h1>
+
+    <!-- Image display area -->
+    <div id="image-container">
+        {% if processed_image %}
+            <img id="image-preview" src="data:image/png;base64,{{ processed_image }}" alt="Processed Image">
+        {% else %}
+            <img id="image-preview" src="" alt="Image Preview" style="display: none;">
+            <label for="image-upload" id="image-upload-label">Select Image</label>
+        {% endif %}
+    </div>
+
+    <!-- Result message area -->
+    {% if object_count is not none %}
+    <div id="result-message" class="{% if object_count == 0 %}text-danger{% else %}text-success{% endif %}">
+        {{ object_count }} objects found.
+    </div>
+    {% endif %}
+
+    <!-- Form for submitting the image -->
+    <form id="image-form" method="POST" enctype="multipart/form-data" action="{{ url_for('home') }}">
+        <!-- Hidden file input. Clicking the labels will trigger this. -->
+        <input type="file" id="image-upload" name="image-file" accept=".png, .jpg, .jpeg, .heic" style="display: none;">
+
+        <div class="button-group">
+            <!-- This label acts as the "Replace Image" button -->
+            <label for="image-upload" class="button">Replace Image</label>
+            <button type="submit" id="submit-btn" disabled>Submit</button>
+        </div>
+    </form>
+
+    <br>
     <a href="{{ url_for('logout') }}">Log Out</a>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const imageUpload = document.getElementById('image-upload');
+            const imagePreview = document.getElementById('image-preview');
+            const imageUploadLabel = document.getElementById('image-upload-label');
+            const submitBtn = document.getElementById('submit-btn');
+            const resultMessage = document.getElementById('result-message');
+
+            // If a processed image is already on the page, keep the submit button disabled
+            if (document.querySelector('[src^="data:image"]')) {
+                submitBtn.disabled = true;
+            }
+
+            // Event listener for when a new file is selected
+            imageUpload.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    // Use FileReader to get the image data and display a preview
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        imagePreview.src = e.target.result;
+                        imagePreview.style.display = 'block';
+                        if(imageUploadLabel) {
+                            imageUploadLabel.style.display = 'none'; // Hide the "Select Image" text
+                        }
+                    };
+                    reader.readAsDataURL(file);
+
+                    // Enable the submit button and clear old results
+                    submitBtn.disabled = false;
+                    if (resultMessage) {
+                        resultMessage.style.display = 'none';
+                    }
+                }
+            });
+        });
+    </script>
 </body>
 </html>
