@@ -20,3 +20,6 @@ INITIAL_ADMINS='[\
   {"username": "admin", "pass1": "SomeStrongP@ss!", "pass2": "required"},
   {"username": "dev_admin", "pass1": "devpassword123", "pass2": "secondfactor"}\
 ]'
+
+To create a local database when another is not present, use `flask --app app create-db`
+To add an admin user without adding them to .env use `flask create-admin [username]`. They will be prompted for a password and second password

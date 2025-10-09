@@ -18,42 +18,42 @@ def setup_database(app):
         db.create_all()
         print('Database tables created/checked')
 
-    admins_json = os.environ.get("INITIAL_ADMINS")
-    if not admins_json:
-        print("No Initial Admins found")
-        return
+        admins_json = os.environ.get("INITIAL_ADMINS")
+        if not admins_json:
+            print("No Initial Admins found")
+            return
 
-    try:
-        admins_to_create = json.loads(admins_json)
-    except json.JSONDecodeError:
-        print("Error in decoding admins")
-        return
-    except Exception as e:
-        print(f"An unexpected error occurred {e}")
-        return
+        try:
+            admins_to_create = json.loads(admins_json)
+        except json.JSONDecodeError:
+            print("Error in decoding admins")
+            return
+        except Exception as e:
+            print(f"An unexpected error occurred {e}")
+            return
 
-    for admin_data in admins_to_create:
-        username = admin_data.get('username')
-        pass_1 = admin_data.get('password')
-        pass_2 = admin_data.get('password_2')
+        for admin_data in admins_to_create:
+            username = admin_data.get('username')
+            pass_1 = admin_data.get('password')
+            pass_2 = admin_data.get('password_2')
 
-        if not username or not pass_1 or not pass_2:
-            print('Issue creating admin, username, password, or second password missing')
-            continue
+            if not username or not pass_1 or not pass_2:
+                print('Issue creating admin, username, password, or second password missing')
+                continue
 
-        admin_exists = db.session.scalar(
-            select(model.Admin).where(model.Admin.username == username)
-        )
+            admin_exists = db.session.scalar(
+                select(model.Admin).where(model.Admin.username == username)
+            )
 
-        if admin_exists:
-            print(f'admin {username} already exists, skipping')
-            continue
+            if admin_exists:
+                print(f'admin {username} already exists, skipping')
+                continue
 
-        hashed_password = model.hash_credentials(pass_1, pass_2)
-        new_admin = model.Admin(username=username, password=hashed_password)
-        db.session.add(new_admin)
+            hashed_password = model.hash_credentials(pass_1, pass_2)
+            new_admin = model.Admin(username=username, password=hashed_password)
+            db.session.add(new_admin)
 
-    db.session.commit()
+        db.session.commit()
 
 def create_app():
     """Application factory pattern"""
