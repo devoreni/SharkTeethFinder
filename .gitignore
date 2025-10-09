@@ -1,5 +1,6 @@
 .env
 *.db
+.venv
 
 .idea/
 __pycache__/
